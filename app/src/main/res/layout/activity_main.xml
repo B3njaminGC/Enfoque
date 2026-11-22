@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black">
+
+    <!-- Barra superior -->
+    <HorizontalScrollView
+        android:id="@+id/topScroll"
+        android:layout_width="0dp"
+        android:layout_height="52dp"
+        android:scrollbars="none"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:id="@+id/topBar"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp">
+
+            <TextView android:id="@+id/chipFlash" style="@style/Chip" android:text="FLASH NO" />
+            <TextView android:id="@+id/chipRatio" style="@style/Chip" android:text="4:3" />
+            <TextView android:id="@+id/chipTimer" style="@style/Chip" android:text="⏱ NO" />
+            <TextView android:id="@+id/chipRes" style="@style/Chip" android:text="12MP" />
+            <TextView android:id="@+id/chipFormat" style="@style/Chip" android:text="JPG" />
+            <TextView android:id="@+id/chipHdr" style="@style/Chip" android:text="HDR" android:visibility="gone" />
+            <TextView android:id="@+id/chipQuality" style="@style/Chip" android:text="2K·30" />
+            <TextView android:id="@+id/chipMic" style="@style/Chip" android:text="🎙 MIC" />
+            <TextView android:id="@+id/chipPrompter" style="@style/Chip" android:text="📜 GUION" />
+            <TextView android:id="@+id/chipLock" style="@style/Chip" android:text="🔓 LOOK" />
+            <TextView android:id="@+id/chipGuides" style="@style/Chip" android:text="▦ GUÍAS" />
+            <TextView android:id="@+id/chipSettings" style="@style/Chip" android:text="⚙ AJUSTES" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Visor -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintDimensionRatio="3:4"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topScroll" />
+
+    <SurfaceView
+        android:id="@+id/videoSurface"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintDimensionRatio="9:16"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topScroll" />
+
+    <!-- Panel del modo VOZ -->
+    <LinearLayout
+        android:id="@+id/voicePanel"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#FF0D0D0D"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="28dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/previewView"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView">
+
+        <TextView
+            android:id="@+id/voiceTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:00"
+            android:textColor="@color/white"
+            android:textSize="64sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/voiceHelp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:text="Grabá la voz de tus Shorts o videos.\nSe guarda en Música/Enfoque (.m4a)."
+            android:textColor="@color/dim"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <com.enfoque.camara.GridOverlay
+        android:id="@+id/gridOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="@id/previewView"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <com.enfoque.camara.LevelOverlay
+        android:id="@+id/levelOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="@id/previewView"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <com.enfoque.camara.FocusRingView
+        android:id="@+id/focusRing"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="@id/previewView"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <com.enfoque.camara.GuideOverlay
+        android:id="@+id/guideOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="@id/previewView"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <com.enfoque.camara.PrompterView
+        android:id="@+id/prompter"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/previewView"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <TextView
+        android:id="@+id/recBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_info"
+        android:paddingStart="12dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="5dp"
+        android:textColor="@color/white"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <com.enfoque.camara.AudioMeterView
+        android:id="@+id/audioMeter"
+        android:layout_width="0dp"
+        android:layout_height="22dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="40dp"
+        android:layout_marginBottom="210dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <View
+        android:id="@+id/flashOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:alpha="0"
+        android:background="@color/black"
+        app:layout_constraintBottom_toBottomOf="@id/previewView"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <com.enfoque.camara.HistogramView
+        android:id="@+id/histogram"
+        android:layout_width="120dp"
+        android:layout_height="56dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <TextView
+        android:id="@+id/infoText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:background="@drawable/bg_info"
+        android:paddingStart="14dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="6dp"
+        android:textColor="@color/white"
+        android:textSize="13sp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <TextView
+        android:id="@+id/countdownText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/white"
+        android:textSize="96sp"
+        android:textStyle="bold"
+        android:shadowColor="#FF000000"
+        android:shadowRadius="12"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/previewView"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <!-- Panel inferior -->
+    <LinearLayout
+        android:id="@+id/bottomPanel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/panel"
+        android:orientation="vertical"
+        android:paddingBottom="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- Exposición rápida (aparece al tocar para enfocar) -->
+        <LinearLayout
+            android:id="@+id/evRow"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/evLabel"
+                android:layout_width="72dp"
+                android:layout_height="wrap_content"
+                android:text="☀ 0.0"
+                android:textColor="@color/accent"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/evSlider"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:stepSize="1"
+                android:value="0"
+                android:valueFrom="0"
+                android:valueTo="10"
+                app:labelBehavior="gone" />
+        </LinearLayout>
+
+        <!-- Modo PRO -->
+        <LinearLayout
+            android:id="@+id/proPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp">
+
+                <TextView android:id="@+id/btnProAuto" style="@style/Chip" android:text="AUTO" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/proSlider"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:stepSize="1"
+                    android:value="0"
+                    android:valueFrom="0"
+                    android:valueTo="10"
+                    app:labelBehavior="gone" />
+
+                <TextView
+                    android:id="@+id/proValue"
+                    android:layout_width="78dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:textColor="@color/accent"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp">
+
+                    <TextView android:id="@+id/chipIso" style="@style/ProChip" android:text="ISO" />
+                    <TextView android:id="@+id/chipShutter" style="@style/ProChip" android:text="VEL." />
+                    <TextView android:id="@+id/chipFocus" style="@style/ProChip" android:text="ENFOQUE" />
+                    <TextView android:id="@+id/chipWb" style="@style/ProChip" android:text="BLANCOS" />
+                    <TextView android:id="@+id/chipEv" style="@style/ProChip" android:text="EV" />
+                </LinearLayout>
+            </HorizontalScrollView>
+        </LinearLayout>
+
+        <!-- Lentes / zoom -->
+        <LinearLayout
+            android:id="@+id/zoomRow"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center"
+            android:orientation="horizontal" />
+
+        <!-- Modos -->
+        <LinearLayout
+            android:id="@+id/modeRow"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView android:id="@+id/modePhoto" style="@style/ModeText" android:text="FOTO" />
+            <TextView android:id="@+id/modePro" style="@style/ModeText" android:text="PRO" />
+            <TextView android:id="@+id/modeYoutube" style="@style/ModeText" android:text="YOUTUBE" />
+            <TextView android:id="@+id/modeShorts" style="@style/ModeText" android:text="SHORTS" />
+            <TextView android:id="@+id/modeVoice" style="@style/ModeText" android:text="VOZ" />
+        </LinearLayout>
+
+        <!-- Controles -->
+        <FrameLayout
+            android:id="@+id/controlsRow"
+            android:layout_width="match_parent"
+            android:layout_height="108dp">
+
+            <ImageView
+                android:id="@+id/thumbnail"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:layout_gravity="start|center_vertical"
+                android:layout_marginStart="34dp"
+                android:background="@drawable/bg_thumb"
+                android:contentDescription="Última foto"
+                android:scaleType="centerCrop" />
+
+            <TextView
+                android:id="@+id/pauseButton"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:layout_gravity="start|center_vertical"
+                android:layout_marginStart="34dp"
+                android:background="@drawable/bg_round"
+                android:gravity="center"
+                android:text="❚❚"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:visibility="gone" />
+
+            <com.enfoque.camara.ShutterButton
+                android:id="@+id/shutterButton"
+                android:layout_width="82dp"
+                android:layout_height="82dp"
+                android:layout_gravity="center" />
+
+            <TextView
+                android:id="@+id/flipButton"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="34dp"
+                android:background="@drawable/bg_round"
+                android:gravity="center"
+                android:text="⟲"
+                android:textColor="@color/white"
+                android:textSize="26sp" />
+        </FrameLayout>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
