@@ -8,6 +8,9 @@ import android.media.MediaRecorder
 class Prefs(context: Context) {
     private val sp: SharedPreferences = context.getSharedPreferences("enfoque", Context.MODE_PRIVATE)
 
+    /** Foto de todos los ajustes, para saber si algo cambió. */
+    fun snapshot(): String = sp.all.toString()
+
     private fun bool(key: String, def: Boolean) = sp.getBoolean(key, def)
     private fun setBool(key: String, v: Boolean) = sp.edit().putBoolean(key, v).apply()
     private fun int(key: String, def: Int) = sp.getInt(key, def)

@@ -109,7 +109,7 @@ class GuideOverlay(context: Context, attrs: AttributeSet?) : View(context, attrs
                     canvas.restore()
                 }
                 if (rotationDeg == 0f) {
-                    canvas.drawText("Girá el celu de costado ⟲", w / 2f, h / 2f - px(48f), hint)
+                    canvas.drawText("Girá el celu de costado", w / 2f, h / 2f - px(48f), hint)
                 }
             }
             Kind.NONE -> {}
@@ -277,10 +277,10 @@ class AudioMeterView(context: Context, attrs: AttributeSet?) : View(context, att
         val peakX = w * peak
         canvas.drawRect(peakX - 2f, 0f, peakX + 2f, h, peakPaint)
         val label = when {
-            db < -59f -> "🎙 sin señal"
-            level > 0.95f -> "🎙 ¡SATURA! alejá el mic"
-            level < 0.45f -> "🎙 bajo · acercá el mic"
-            else -> "🎙 ${db.toInt()} dB"
+            db < -59f -> "sin señal"
+            level > 0.95f -> "¡satura! alejá el mic"
+            level < 0.45f -> "bajo · acercá el mic"
+            else -> "${db.toInt()} dB"
         }
         canvas.drawText(label, px(8f), h / 2f + text.textSize / 3f, text)
     }

@@ -6,39 +6,76 @@
     android:layout_height="match_parent"
     android:background="@color/black">
 
-    <!-- Barra superior -->
-    <HorizontalScrollView
-        android:id="@+id/topScroll"
+    <!-- Barra superior: flash · resumen · ajustes -->
+    <LinearLayout
+        android:id="@+id/topBar"
         android:layout_width="0dp"
-        android:layout_height="52dp"
-        android:scrollbars="none"
+        android:layout_height="60dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <ImageView
+            android:id="@+id/btnFlash"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_round"
+            android:contentDescription="Flash"
+            android:padding="11dp"
+            android:src="@drawable/ic_flash_off" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
         <LinearLayout
-            android:id="@+id/topBar"
+            android:id="@+id/statusPill"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp">
+            android:paddingStart="16dp"
+            android:paddingEnd="12dp">
 
-            <TextView android:id="@+id/chipFlash" style="@style/Chip" android:text="FLASH NO" />
-            <TextView android:id="@+id/chipRatio" style="@style/Chip" android:text="4:3" />
-            <TextView android:id="@+id/chipTimer" style="@style/Chip" android:text="⏱ NO" />
-            <TextView android:id="@+id/chipRes" style="@style/Chip" android:text="12MP" />
-            <TextView android:id="@+id/chipFormat" style="@style/Chip" android:text="JPG" />
-            <TextView android:id="@+id/chipHdr" style="@style/Chip" android:text="HDR" android:visibility="gone" />
-            <TextView android:id="@+id/chipQuality" style="@style/Chip" android:text="2K·30" />
-            <TextView android:id="@+id/chipMic" style="@style/Chip" android:text="🎙 MIC" />
-            <TextView android:id="@+id/chipPrompter" style="@style/Chip" android:text="📜 GUION" />
-            <TextView android:id="@+id/chipLock" style="@style/Chip" android:text="🔓 LOOK" />
-            <TextView android:id="@+id/chipGuides" style="@style/Chip" android:text="▦ GUÍAS" />
-            <TextView android:id="@+id/chipSettings" style="@style/Chip" android:text="⚙ AJUSTES" />
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="12MP · 4:3"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/statusChevron"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginStart="6dp"
+                android:src="@drawable/ic_chevron_down"
+                app:tint="@color/white" />
         </LinearLayout>
-    </HorizontalScrollView>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/btnSettings"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_round"
+            android:contentDescription="Ajustes"
+            android:padding="11dp"
+            android:src="@drawable/ic_settings" />
+    </LinearLayout>
 
     <!-- Visor -->
     <androidx.camera.view.PreviewView
@@ -48,7 +85,7 @@
         app:layout_constraintDimensionRatio="3:4"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/topScroll" />
+        app:layout_constraintTop_toBottomOf="@id/topBar" />
 
     <SurfaceView
         android:id="@+id/videoSurface"
@@ -58,14 +95,14 @@
         app:layout_constraintDimensionRatio="9:16"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/topScroll" />
+        app:layout_constraintTop_toBottomOf="@id/topBar" />
 
-    <!-- Panel del modo VOZ -->
+    <!-- Modo VOZ -->
     <LinearLayout
         android:id="@+id/voicePanel"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#FF0D0D0D"
+        android:background="#FF0D0D10"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="28dp"
@@ -75,22 +112,30 @@
         app:layout_constraintStart_toStartOf="@id/previewView"
         app:layout_constraintTop_toTopOf="@id/previewView">
 
+        <ImageView
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:src="@drawable/ic_voice"
+            app:tint="@color/accent" />
+
         <TextView
             android:id="@+id/voiceTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:fontFamily="sans-serif-light"
             android:text="00:00"
             android:textColor="@color/white"
-            android:textSize="64sp"
-            android:textStyle="bold" />
+            android:textSize="68sp" />
 
         <TextView
             android:id="@+id/voiceHelp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="Grabá la voz de tus Shorts o videos.\nSe guarda en Música/Enfoque (.m4a)."
+            android:lineSpacingMultiplier="1.2"
+            android:text="Grabá la voz de tus Shorts y videos.\nSe guarda en Música/Enfoque."
             android:textColor="@color/dim"
             android:textSize="14sp" />
     </LinearLayout>
@@ -141,36 +186,6 @@
         app:layout_constraintStart_toStartOf="@id/previewView"
         app:layout_constraintTop_toTopOf="@id/previewView" />
 
-    <TextView
-        android:id="@+id/recBadge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:background="@drawable/bg_info"
-        android:paddingStart="12dp"
-        android:paddingTop="5dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="5dp"
-        android:textColor="@color/white"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="@id/previewView"
-        app:layout_constraintStart_toStartOf="@id/previewView"
-        app:layout_constraintTop_toTopOf="@id/previewView" />
-
-    <com.enfoque.camara.AudioMeterView
-        android:id="@+id/audioMeter"
-        android:layout_width="0dp"
-        android:layout_height="22dp"
-        android:layout_marginStart="40dp"
-        android:layout_marginEnd="40dp"
-        android:layout_marginBottom="210dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
     <View
         android:id="@+id/flashOverlay"
         android:layout_width="0dp"
@@ -186,9 +201,27 @@
         android:id="@+id/histogram"
         android:layout_width="120dp"
         android:layout_height="56dp"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
         android:visibility="gone"
+        app:layout_constraintStart_toStartOf="@id/previewView"
+        app:layout_constraintTop_toTopOf="@id/previewView" />
+
+    <TextView
+        android:id="@+id/recBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_info"
+        android:paddingStart="14dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="6dp"
+        android:textColor="@color/white"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
         app:layout_constraintStart_toStartOf="@id/previewView"
         app:layout_constraintTop_toTopOf="@id/previewView" />
 
@@ -196,12 +229,15 @@
         android:id="@+id/infoText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="52dp"
+        android:layout_marginEnd="24dp"
         android:background="@drawable/bg_info"
-        android:paddingStart="14dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="6dp"
+        android:gravity="center"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
         android:textColor="@color/white"
         android:textSize="13sp"
         android:visibility="gone"
@@ -213,11 +249,11 @@
         android:id="@+id/countdownText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/white"
-        android:textSize="96sp"
-        android:textStyle="bold"
+        android:fontFamily="sans-serif-light"
         android:shadowColor="#FF000000"
-        android:shadowRadius="12"
+        android:shadowRadius="14"
+        android:textColor="@color/white"
+        android:textSize="110sp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@id/previewView"
         app:layout_constraintEnd_toEndOf="@id/previewView"
@@ -229,29 +265,43 @@
         android:id="@+id/bottomPanel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/panel"
+        android:background="@drawable/bg_bottom_fade"
         android:orientation="vertical"
-        android:paddingBottom="6dp"
+        android:paddingTop="22dp"
+        android:paddingBottom="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
+
+        <com.enfoque.camara.AudioMeterView
+            android:id="@+id/audioMeter"
+            android:layout_width="match_parent"
+            android:layout_height="22dp"
+            android:layout_marginStart="44dp"
+            android:layout_marginEnd="44dp"
+            android:layout_marginBottom="10dp"
+            android:visibility="gone" />
 
         <!-- Exposición rápida (aparece al tocar para enfocar) -->
         <LinearLayout
             android:id="@+id/evRow"
             android:layout_width="match_parent"
             android:layout_height="44dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="6dp"
+            android:background="@drawable/bg_glass"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="8dp"
             android:visibility="gone">
 
             <TextView
                 android:id="@+id/evLabel"
-                android:layout_width="72dp"
+                android:layout_width="68dp"
                 android:layout_height="wrap_content"
-                android:text="☀ 0.0"
+                android:text="EV +0.0"
                 android:textColor="@color/accent"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -279,10 +329,13 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/bg_glass"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp">
+                android:paddingStart="8dp"
+                android:paddingEnd="14dp">
 
                 <TextView android:id="@+id/btnProAuto" style="@style/Chip" android:text="AUTO" />
 
@@ -299,7 +352,7 @@
 
                 <TextView
                     android:id="@+id/proValue"
-                    android:layout_width="78dp"
+                    android:layout_width="64dp"
                     android:layout_height="wrap_content"
                     android:gravity="end"
                     android:textColor="@color/accent"
@@ -309,7 +362,7 @@
 
             <HorizontalScrollView
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="60dp"
                 android:scrollbars="none">
 
                 <LinearLayout
@@ -317,8 +370,8 @@
                     android:layout_height="match_parent"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp">
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
 
                     <TextView android:id="@+id/chipIso" style="@style/ProChip" android:text="ISO" />
                     <TextView android:id="@+id/chipShutter" style="@style/ProChip" android:text="VEL." />
@@ -329,19 +382,31 @@
             </HorizontalScrollView>
         </LinearLayout>
 
-        <!-- Lentes / zoom -->
-        <LinearLayout
-            android:id="@+id/zoomRow"
+        <!-- Lentes / zoom en cápsula -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:gravity="center"
-            android:orientation="horizontal" />
+            android:layout_height="48dp">
+
+            <LinearLayout
+                android:id="@+id/zoomRow"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_glass"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="3dp"
+                android:paddingEnd="3dp" />
+        </FrameLayout>
 
         <!-- Modos -->
         <LinearLayout
             android:id="@+id/modeRow"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="10dp"
             android:gravity="center"
             android:orientation="horizontal">
 
@@ -356,48 +421,63 @@
         <FrameLayout
             android:id="@+id/controlsRow"
             android:layout_width="match_parent"
-            android:layout_height="108dp">
+            android:layout_height="112dp">
 
             <ImageView
                 android:id="@+id/thumbnail"
                 android:layout_width="54dp"
                 android:layout_height="54dp"
                 android:layout_gravity="start|center_vertical"
-                android:layout_marginStart="34dp"
+                android:layout_marginStart="36dp"
                 android:background="@drawable/bg_thumb"
-                android:contentDescription="Última foto"
+                android:contentDescription="Última foto o video"
                 android:scaleType="centerCrop" />
 
-            <TextView
+            <ImageView
                 android:id="@+id/pauseButton"
                 android:layout_width="54dp"
                 android:layout_height="54dp"
                 android:layout_gravity="start|center_vertical"
-                android:layout_marginStart="34dp"
+                android:layout_marginStart="36dp"
                 android:background="@drawable/bg_round"
-                android:gravity="center"
-                android:text="❚❚"
-                android:textColor="@color/white"
-                android:textSize="18sp"
+                android:contentDescription="Pausa"
+                android:padding="16dp"
+                android:src="@drawable/ic_pause"
                 android:visibility="gone" />
 
             <com.enfoque.camara.ShutterButton
                 android:id="@+id/shutterButton"
-                android:layout_width="82dp"
-                android:layout_height="82dp"
+                android:layout_width="84dp"
+                android:layout_height="84dp"
                 android:layout_gravity="center" />
 
-            <TextView
+            <ImageView
                 android:id="@+id/flipButton"
                 android:layout_width="54dp"
                 android:layout_height="54dp"
                 android:layout_gravity="end|center_vertical"
-                android:layout_marginEnd="34dp"
+                android:layout_marginEnd="36dp"
                 android:background="@drawable/bg_round"
-                android:gravity="center"
-                android:text="⟲"
-                android:textColor="@color/white"
-                android:textSize="26sp" />
+                android:contentDescription="Cambiar cámara"
+                android:padding="14dp"
+                android:src="@drawable/ic_flip" />
         </FrameLayout>
     </LinearLayout>
+
+    <!-- Accesos rápidos (se despliega al tocar el resumen de arriba) -->
+    <LinearLayout
+        android:id="@+id/quickPanel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/bg_panel"
+        android:elevation="12dp"
+        android:orientation="vertical"
+        android:padding="10dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topBar" />
 </androidx.constraintlayout.widget.ConstraintLayout>

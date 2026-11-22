@@ -13,8 +13,8 @@ android {
         applicationId = "com.enfoque.camara"
         minSdk = 29
         targetSdk = 35
-        versionCode = 2
-        versionName = "2.0-creador"
+        versionCode = 3
+        versionName = "2.1"
     }
 
     // Firma fija: así cada APK nuevo se instala encima del anterior sin desinstalar.

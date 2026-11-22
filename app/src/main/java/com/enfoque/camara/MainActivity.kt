@@ -8,6 +8,8 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -137,18 +139,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
     private lateinit var flashOverlay: View
     private lateinit var infoText: TextView
     private lateinit var countdownText: TextView
-    private lateinit var chipFlash: TextView
-    private lateinit var chipRatio: TextView
-    private lateinit var chipTimer: TextView
-    private lateinit var chipRes: TextView
-    private lateinit var chipFormat: TextView
-    private lateinit var chipHdr: TextView
-    private lateinit var chipQuality: TextView
-    private lateinit var chipMic: TextView
-    private lateinit var chipPrompter: TextView
-    private lateinit var chipLock: TextView
-    private lateinit var chipGuides: TextView
-    private lateinit var chipSettings: TextView
+    private lateinit var btnFlash: ImageView
+    private lateinit var statusPill: View
+    private lateinit var statusText: TextView
+    private lateinit var statusChevron: ImageView
+    private lateinit var btnSettings: ImageView
+    private lateinit var quickPanel: LinearLayout
     private lateinit var evRow: View
     private lateinit var evLabel: TextView
     private lateinit var evSlider: Slider
@@ -165,8 +161,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
     private lateinit var modeRow: LinearLayout
     private lateinit var thumbnail: ImageView
     private lateinit var shutterButton: ShutterButton
-    private lateinit var flipButton: TextView
-    private lateinit var pauseButton: TextView
+    private lateinit var flipButton: ImageView
+    private lateinit var pauseButton: ImageView
     private val modeViews = mutableMapOf<Mode, TextView>()
 
     // ---------- Estado foto (CameraX) ----------
@@ -208,6 +204,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
     private var pausedTotalMs = 0L
     private var recPaused = false
     private var micTesting = false
+    private var settingsSnapshot: String? = null
+    private var mpLabel = "12MP"
 
     // ---------- Modo PRO ----------
     private var proIso: Int? = null
@@ -299,6 +297,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
             sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let { sm.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
         }
         if (mode == Mode.PRO) main.post(proTicker)
+        val snap = settingsSnapshot
+        if (snap != null) {
+            settingsSnapshot = null
+            if (snap != prefs.snapshot()) applySettingsChanges()
+        }
     }
 
     override fun onPause() {
@@ -342,18 +345,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
         flashOverlay = findViewById(R.id.flashOverlay)
         infoText = findViewById(R.id.infoText)
         countdownText = findViewById(R.id.countdownText)
-        chipFlash = findViewById(R.id.chipFlash)
-        chipRatio = findViewById(R.id.chipRatio)
-        chipTimer = findViewById(R.id.chipTimer)
-        chipRes = findViewById(R.id.chipRes)
-        chipFormat = findViewById(R.id.chipFormat)
-        chipHdr = findViewById(R.id.chipHdr)
-        chipQuality = findViewById(R.id.chipQuality)
-        chipMic = findViewById(R.id.chipMic)
-        chipPrompter = findViewById(R.id.chipPrompter)
-        chipLock = findViewById(R.id.chipLock)
-        chipGuides = findViewById(R.id.chipGuides)
-        chipSettings = findViewById(R.id.chipSettings)
+        btnFlash = findViewById(R.id.btnFlash)
+        statusPill = findViewById(R.id.statusPill)
+        statusText = findViewById(R.id.statusText)
+        statusChevron = findViewById(R.id.statusChevron)
+        btnSettings = findViewById(R.id.btnSettings)
+        quickPanel = findViewById(R.id.quickPanel)
         evRow = findViewById(R.id.evRow)
         evLabel = findViewById(R.id.evLabel)
         evSlider = findViewById(R.id.evSlider)
@@ -406,42 +403,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
 
         for ((m, v) in modeViews) v.setOnClickListener { setMode(m) }
 
-        chipFlash.setOnClickListener { cycleFlash() }
-        chipRatio.setOnClickListener {
-            prefs.ratio169 = !prefs.ratio169
-            applyRatio(); refreshTopChips(); bindCamera()
-        }
-        chipTimer.setOnClickListener {
-            timerSec = when (timerSec) { 0 -> 3; 3 -> 10; else -> 0 }
-            refreshTopChips()
-        }
-        chipRes.setOnClickListener {
-            prefs.maxRes = !prefs.maxRes
-            showInfo(if (prefs.maxRes) "Máxima resolución (108MP): más detalle con buena luz" else "12MP: mejor con poca luz y menos ruido")
-            bindCamera()
-        }
-        chipFormat.setOnClickListener { cycleFormat() }
-        chipHdr.setOnClickListener { hdrOn = !hdrOn; refreshTopChips(); bindCamera() }
-        chipQuality.setOnClickListener { openVideoQuality() }
-        chipMic.setOnClickListener { openMicSettings() }
-        chipPrompter.setOnClickListener {
-            if (prefs.prompterText.isBlank()) { editPrompter(); return@setOnClickListener }
-            prefs.prompterOn = !prefs.prompterOn
-            applyPrompterVisibility(); refreshTopChips()
-        }
-        chipPrompter.setOnLongClickListener { editPrompter(); true }
-        chipLock.setOnClickListener {
-            lookLocked = !lookLocked
-            engine?.setLookLocked(lookLocked)
-            showInfo(if (lookLocked) "Look bloqueado: luz, color y enfoque fijos (no \"respira\")" else "Look automático")
-            refreshTopChips()
-        }
-        chipGuides.setOnClickListener {
-            prefs.guides = !prefs.guides
-            guideOverlay.showZones = prefs.guides
-            refreshTopChips()
-        }
-        chipSettings.setOnClickListener { openSettings() }
+        btnFlash.setOnClickListener { cycleFlash() }
+        statusPill.setOnClickListener { toggleQuickPanel() }
+        btnSettings.setOnClickListener { openSettings() }
 
         evSlider.addOnChangeListener { _, value, fromUser ->
             if (!fromUser) return@addOnChangeListener
@@ -477,6 +441,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
             }
         })
         val touch = View.OnTouchListener { _, ev ->
+            if (quickPanel.visibility == View.VISIBLE) {
+                if (ev.actionMasked == MotionEvent.ACTION_DOWN) hideQuickPanel()
+                return@OnTouchListener true
+            }
             scale.onTouchEvent(ev)
             if (!scale.isInProgress && ev.pointerCount == 1) gestures.onTouchEvent(ev)
             true
@@ -1009,7 +977,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
 
         imageCapture?.resolutionInfo?.resolution?.let { s ->
             val mp = s.width.toLong() * s.height / 1_000_000.0
-            chipRes.text = if (mp >= 10) "${mp.roundToInt()}MP" else String.format(Locale.US, "%.1fMP", mp)
+            mpLabel = if (mp >= 10) "${mp.roundToInt()}MP" else String.format(Locale.US, "%.1fMP", mp)
+            refreshTopChips()
         }
     }
 
@@ -1063,6 +1032,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
     }
 
     private fun buildZoomRow() {
+        buildZoomRowInner()
+        zoomRow.visibility = if (zoomRow.childCount == 0) View.INVISIBLE else View.VISIBLE
+    }
+
+    private fun buildZoomRowInner() {
         zoomRow.removeAllViews()
         if (mode == Mode.VOICE) return
         if (useFront) {
@@ -1101,10 +1075,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
         val tv = TextView(this).apply {
             text = label
             gravity = Gravity.CENTER
-            textSize = if (selected) 13f else 12f
-            setTextColor(ContextCompat.getColor(context, if (selected) R.color.accent else R.color.white))
+            textSize = if (selected) 13.5f else 12f
+            setTextColor(if (selected) Ui.ACCENT else Color.WHITE)
             setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setBackgroundResource(R.drawable.bg_round)
+            if (selected) setBackgroundResource(R.drawable.bg_round)
             setOnClickListener { onClick() }
             rotation = uiRotation
         }
@@ -1171,7 +1145,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
         for ((m, v) in modeViews) {
             val sel = m == mode
             v.setTextColor(ContextCompat.getColor(this, if (sel) R.color.accent else R.color.dim))
-            v.textSize = if (sel) 14f else 13f
+            v.background = if (sel) ContextCompat.getDrawable(this, R.drawable.bg_mode_sel) else null
         }
         shutterButton.videoMode = isVideoMode() || mode == Mode.VOICE
         proPanel.visibility = if (mode == Mode.PRO) View.VISIBLE else View.GONE
@@ -1196,41 +1170,213 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
         prompter.visibility = if (show) View.VISIBLE else View.GONE
     }
 
+    /** Barra de arriba: ícono de flash y resumen de cómo vas a grabar. */
     private fun refreshTopChips() {
-        val photo = isPhotoMode()
-        val video = isVideoMode()
         val voiceMode = mode == Mode.VOICE
-        fun vis(v: View, show: Boolean) { v.visibility = if (show) View.VISIBLE else View.GONE }
-
-        chipFlash.text = when {
-            torchOn -> "🔦 LINTERNA"
-            flashMode == ImageCapture.FLASH_MODE_AUTO -> "⚡ AUTO"
-            flashMode == ImageCapture.FLASH_MODE_ON -> "⚡ SÍ"
-            else -> "⚡ NO"
+        btnFlash.visibility = if (useFront || voiceMode) View.INVISIBLE else View.VISIBLE
+        btnFlash.setImageResource(
+            when {
+                torchOn -> R.drawable.ic_flashlight
+                isVideoMode() -> R.drawable.ic_flash_off
+                flashMode == ImageCapture.FLASH_MODE_AUTO -> R.drawable.ic_flash_auto
+                flashMode == ImageCapture.FLASH_MODE_ON -> R.drawable.ic_flash_on
+                else -> R.drawable.ic_flash_off
+            }
+        )
+        val flashActive = torchOn || (!isVideoMode() && flashMode != ImageCapture.FLASH_MODE_OFF)
+        btnFlash.imageTintList = ColorStateList.valueOf(if (flashActive) Ui.ACCENT else Color.WHITE)
+        val timer = if (timerSec > 0) " · ${timerSec}s" else ""
+        statusText.text = when {
+            isPhotoMode() -> "$mpLabel · ${if (prefs.ratio169) "16:9" else "4:3"}" +
+                (if (boundFormat != ImageCapture.OUTPUT_FORMAT_JPEG) " · ${formatLabel(boundFormat)}" else "") + timer
+            isVideoMode() -> videoLabel() + (if (lookLocked) " · fijo" else "") + timer
+            else -> micShort() + timer
         }
-        vis(chipFlash, !useFront && !voiceMode)
-        chipRatio.text = if (prefs.ratio169) "16:9" else "4:3"
-        vis(chipRatio, photo)
-        chipTimer.text = if (timerSec == 0) "⏱ NO" else "⏱ ${timerSec}s"
-        vis(chipRes, photo)
-        if (!prefs.maxRes && chipRes.text.isNullOrEmpty()) chipRes.text = "12MP"
-        vis(chipFormat, photo && activeExtension == null && supportedFormats.size > 1)
-        chipFormat.text = formatLabel(boundFormat)
-        val lens = currentLens
-        vis(chipHdr, mode == Mode.PHOTO && lens != null && isExtAvailable(lens, ExtensionMode.HDR))
-        chipHdr.text = if (hdrOn) "HDR SÍ" else "HDR NO"
+        if (quickPanel.visibility == View.VISIBLE) buildQuickPanel()
+    }
 
-        vis(chipQuality, video)
+    private fun videoLabel(): String {
         val cfg = videoCfg
-        chipQuality.text = cfg?.label ?: when (prefs.videoRes) { 0 -> "2K"; 1 -> "1080p"; 3 -> "4K"; else -> "720p" }
-        vis(chipMic, video || voiceMode)
-        chipMic.text = if (!prefs.audioOn && !voiceMode) "🔇 SIN AUDIO" else "🎙 " + (AudioSetup.build(this, prefs, force = true)?.label ?: "MIC")
-        vis(chipPrompter, video || voiceMode)
-        chipPrompter.text = if (prefs.prompterOn && prefs.prompterText.isNotBlank()) "📜 GUION SÍ" else "📜 GUION"
-        vis(chipLock, video)
-        chipLock.text = if (lookLocked) "🔒 LOOK" else "🔓 LOOK"
-        vis(chipGuides, video)
-        chipGuides.text = if (prefs.guides) "▦ GUÍAS SÍ" else "▦ GUÍAS NO"
+        if (cfg != null) return "${cfg.label.substringBefore("·")} · ${cfg.fps} fps"
+        val res = when (prefs.videoRes) { 0 -> "2K"; 1 -> "1080p"; 3 -> "4K"; else -> "720p" }
+        val fps = if (prefs.fps60 && prefs.videoRes == 1 || prefs.fps60 && prefs.videoRes == 2) 60 else 30
+        return "$res · $fps fps"
+    }
+
+    private fun micShort(): String =
+        if (!prefs.audioOn && mode != Mode.VOICE) "Sin audio"
+        else AudioSetup.build(this, prefs, force = true)?.label ?: "Micrófono"
+
+    // ---------- Panel de accesos rápidos ----------
+
+    private class Tile(val icon: Int, val label: String, val value: String, val active: Boolean, val onLong: (() -> Unit)? = null, val onClick: () -> Unit)
+
+    private fun prompterActive() = prefs.prompterOn && prefs.prompterText.isNotBlank()
+
+    private fun quickTiles(): List<Tile> {
+        val t = mutableListOf<Tile>()
+        val timerTile = Tile(R.drawable.ic_timer, "Temporizador", if (timerSec == 0) "No" else "$timerSec s", timerSec > 0) {
+            timerSec = when (timerSec) { 0 -> 3; 3 -> 10; else -> 0 }
+            refreshTopChips()
+        }
+        val prompterTile = Tile(R.drawable.ic_script, "Guion",
+            if (prefs.prompterText.isBlank()) "Escribir" else if (prefs.prompterOn) "Sí" else "No",
+            prompterActive(), onLong = { editPrompter() }) { togglePrompterQuick() }
+        when {
+            isPhotoMode() -> {
+                t += Tile(R.drawable.ic_ratio, "Proporción", if (prefs.ratio169) "16:9" else "4:3", false) {
+                    prefs.ratio169 = !prefs.ratio169
+                    applyRatio(); bindCamera(); refreshTopChips()
+                }
+                t += Tile(R.drawable.ic_resolution, "Resolución", if (prefs.maxRes) "108MP" else "12MP", prefs.maxRes) {
+                    prefs.maxRes = !prefs.maxRes
+                    showInfo(if (prefs.maxRes) "108MP: más detalle con buena luz" else "12MP: mejor con poca luz y menos ruido")
+                    bindCamera()
+                }
+                t += timerTile
+                if (activeExtension == null && supportedFormats.size > 1) {
+                    t += Tile(R.drawable.ic_format, "Formato", formatLabel(boundFormat), boundFormat != ImageCapture.OUTPUT_FORMAT_JPEG) { cycleFormat() }
+                }
+                val lens = currentLens
+                if (mode == Mode.PHOTO && lens != null && isExtAvailable(lens, ExtensionMode.HDR)) {
+                    t += Tile(R.drawable.ic_hdr, "HDR", if (hdrOn) "Sí" else "No", hdrOn) { hdrOn = !hdrOn; bindCamera(); refreshTopChips() }
+                }
+                t += Tile(R.drawable.ic_grid, "Cuadrícula", if (prefs.grid) "Sí" else "No", prefs.grid) {
+                    prefs.grid = !prefs.grid; refreshModeUi(); refreshTopChips()
+                }
+            }
+            isVideoMode() -> {
+                t += Tile(R.drawable.ic_quality, "Calidad", videoLabel(), false) { cycleVideoQuality() }
+                t += Tile(R.drawable.ic_mic, "Micrófono", micShort().substringBefore(" ·"), prefs.audioOn) {
+                    Ui.showMicSheet(this, prefs) { afterVideoChange() }
+                }
+                t += timerTile
+                t += prompterTile
+                t += Tile(if (lookLocked) R.drawable.ic_lock else R.drawable.ic_unlock, "Look", if (lookLocked) "Fijo" else "Auto", lookLocked) { toggleLook() }
+                t += Tile(R.drawable.ic_guides, "Guías", if (prefs.guides) "Sí" else "No", prefs.guides) {
+                    prefs.guides = !prefs.guides
+                    guideOverlay.showZones = prefs.guides
+                    refreshTopChips()
+                }
+            }
+            else -> {
+                t += Tile(R.drawable.ic_mic, "Micrófono", micShort().substringBefore(" ·"), true) {
+                    Ui.showMicSheet(this, prefs) { refreshTopChips() }
+                }
+                t += timerTile
+                t += prompterTile
+            }
+        }
+        return t
+    }
+
+    private fun buildQuickPanel() {
+        quickPanel.removeAllViews()
+        val perRow = 3
+        val m = Ui.dp(this, 4f)
+        quickTiles().chunked(perRow).forEach { rowTiles ->
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            for (i in 0 until perRow) {
+                val tile = rowTiles.getOrNull(i)
+                val v: View = if (tile == null) View(this) else tileView(tile)
+                row.addView(v, LinearLayout.LayoutParams(0, Ui.dp(this, 90f), 1f).apply { setMargins(m, m, m, m) })
+            }
+            quickPanel.addView(row)
+        }
+        val more = Ui.pillButton(this, "Todos los ajustes", false, R.drawable.ic_settings) { openSettings() }
+        quickPanel.addView(more, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            setMargins(m, Ui.dp(this@MainActivity, 8f), m, m)
+        })
+    }
+
+    private fun tileView(t: Tile): View {
+        val r = Ui.dp(this, 18f).toFloat()
+        val fg = if (t.active) Ui.ACCENT else Color.WHITE
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            background = Ui.ripple(Ui.rounded(if (t.active) Ui.ACCENT_SOFT else Ui.CARD2, r), r)
+            addView(Ui.icon(context, t.icon, fg, 22f))
+            addView(Ui.text(context, t.value, 13.5f, if (t.active) Ui.ACCENT else Ui.TEXT, true).apply {
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                gravity = Gravity.CENTER
+                setPadding(Ui.dp(context, 6f), Ui.dp(context, 6f), Ui.dp(context, 6f), 0)
+            })
+            addView(Ui.text(context, t.label, 11f, Ui.TEXT2).apply { maxLines = 1; gravity = Gravity.CENTER })
+            setOnClickListener { t.onClick() }
+            val long = t.onLong
+            if (long != null) setOnLongClickListener { long(); true }
+        }
+    }
+
+    private fun toggleQuickPanel() {
+        if (quickPanel.visibility == View.VISIBLE) hideQuickPanel() else showQuickPanel()
+    }
+
+    private fun showQuickPanel() {
+        if (isRecording()) return
+        buildQuickPanel()
+        quickPanel.animate().cancel()
+        quickPanel.alpha = 0f
+        quickPanel.translationY = -Ui.dp(this, 12f).toFloat()
+        quickPanel.visibility = View.VISIBLE
+        quickPanel.animate().alpha(1f).translationY(0f).setDuration(180).start()
+        statusChevron.animate().rotation(180f).setDuration(180).start()
+    }
+
+    private fun hideQuickPanel() {
+        if (quickPanel.visibility != View.VISIBLE) return
+        statusChevron.animate().rotation(0f).setDuration(150).start()
+        quickPanel.animate().cancel()
+        quickPanel.animate().alpha(0f).translationY(-Ui.dp(this, 12f).toFloat()).setDuration(150)
+            .withEndAction { quickPanel.visibility = View.GONE }.start()
+    }
+
+    private fun cycleVideoQuality() {
+        if (isRecording()) return
+        val lens = currentLens
+        val sizes = lens?.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)?.getOutputSizes(MediaRecorder::class.java)?.toList() ?: emptyList()
+        val has60 = lens?.aeFpsRanges?.any { it.upper >= 60 } == true
+        val combos = mutableListOf<Pair<Int, Boolean>>()
+        if (sizes.any { it.width >= 3840 }) combos += 3 to false
+        if (sizes.any { it.width == 2560 }) combos += 0 to false
+        combos += 1 to false
+        if (has60) combos += 1 to true
+        combos += 2 to false
+        val fps60Now = prefs.fps60 && (prefs.videoRes == 1 || prefs.videoRes == 2)
+        val cur = combos.indexOfFirst { it.first == prefs.videoRes && it.second == fps60Now }
+        val next = combos[(cur + 1) % combos.size]
+        prefs.videoRes = next.first
+        prefs.fps60 = next.second
+        afterVideoChange()
+    }
+
+    private fun togglePrompterQuick() {
+        if (prefs.prompterText.isBlank()) { editPrompter(); return }
+        prefs.prompterOn = !prefs.prompterOn
+        applyPrompterVisibility()
+        refreshTopChips()
+    }
+
+    private fun editPrompter() {
+        if (isRecording()) return
+        hideQuickPanel()
+        Ui.showPrompterSheet(this, prefs) {
+            prompter.text = prefs.prompterText
+            prompter.speedLevel = prefs.prompterSpeed
+            prompter.textSizeSp = prefs.prompterSize.toFloat()
+            applyPrompterVisibility()
+            refreshTopChips()
+            if (prefs.prompterOn) showInfo("El guion arranca solo al grabar. Tocalo para pausar.", 4000)
+        }
+    }
+
+    private fun toggleLook() {
+        lookLocked = !lookLocked
+        engine?.setLookLocked(lookLocked)
+        showInfo(if (lookLocked) "Look fijo: luz, color y enfoque no cambian mientras grabás" else "Look automático")
+        refreshTopChips()
     }
 
     private fun formatLabel(f: Int) = when (f) {
@@ -1314,7 +1460,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
 
     private fun updateEvLabel(idx: Int) {
         val step = camera?.cameraInfo?.exposureState?.exposureCompensationStep?.toFloat() ?: 0f
-        evLabel.text = String.format(Locale.US, "☀ %+.1f", idx * step)
+        evLabel.text = String.format(Locale.US, "EV %+.1f", idx * step)
     }
 
     // =====================================================================================
@@ -1571,7 +1717,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
             recPaused = true
             prompter.pause()
         }
-        pauseButton.text = if (recPaused) "▶" else "❚❚"
+        pauseButton.setImageResource(if (recPaused) R.drawable.ic_play else R.drawable.ic_pause)
     }
 
     private fun setRecordingUi(on: Boolean) {
@@ -1579,7 +1725,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
         modeRow.visibility = if (on) View.INVISIBLE else View.VISIBLE
         thumbnail.visibility = if (on) View.GONE else View.VISIBLE
         pauseButton.visibility = if (on) View.VISIBLE else View.GONE
-        pauseButton.text = "❚❚"
+        pauseButton.setImageResource(R.drawable.ic_pause)
+        if (on) hideQuickPanel()
         flipButton.isEnabled = !on
         flipButton.alpha = if (on) 0.3f else 1f
         recBadge.visibility = if (on) View.VISIBLE else View.GONE
@@ -1668,291 +1815,27 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
     // Ajustes: video, micrófono, guion
     // =====================================================================================
 
-    private fun onOff(b: Boolean) = if (b) "SÍ" else "NO"
-
-    private fun videoResOptions(): List<Pair<Int, String>> {
-        val lens = currentLens
-        val sizes = lens?.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)?.getOutputSizes(MediaRecorder::class.java)?.toList() ?: emptyList()
-        val opts = mutableListOf<Pair<Int, String>>()
-        if (sizes.any { it.width >= 3840 }) opts += 3 to "4K (2160p)"
-        if (sizes.any { it.width == 2560 }) opts += 0 to "2K (1440p) · máxima de tu Zero 40"
-        opts += 1 to "1080p (Full HD)"
-        opts += 2 to "720p (liviano)"
-        return opts
-    }
-
-    private fun openVideoQuality() {
-        if (isRecording()) return
-        val res = videoResOptions()
-        val curRes = res.firstOrNull { it.first == prefs.videoRes }?.second ?: "?"
-        val items = arrayOf(
-            "Resolución: $curRes",
-            "Cuadros por segundo: ${if (prefs.fps60) "60 (solo 1080p o menos)" else "30"}",
-            "Calidad (bitrate): ${listOf("Liviana", "Alta", "Máxima")[prefs.videoBitrateLevel.coerceIn(0, 2)]}",
-            "Códec: ${if (prefs.hevc) "HEVC (pesa la mitad)" else "H.264 (compatible con todo)"}",
-            "Estabilización: ${onOff(prefs.stabilization)}",
-            "Antiparpadeo de luces 50 Hz: ${onOff(prefs.antibanding50)}",
-            "Límite de Shorts: ${listOf("1 minuto", "3 minutos", "Sin límite")[prefs.shortsLimit.coerceIn(0, 2)]}"
-        )
-        AlertDialog.Builder(this)
-            .setTitle("Calidad de video")
-            .setItems(items) { _, which ->
-                when (which) {
-                    0 -> {
-                        val names = res.map { it.second }.toTypedArray()
-                        AlertDialog.Builder(this).setTitle("Resolución")
-                            .setItems(names) { _, i -> prefs.videoRes = res[i].first; afterVideoChange(); openVideoQuality() }
-                            .show()
-                        return@setItems
-                    }
-                    1 -> prefs.fps60 = !prefs.fps60
-                    2 -> prefs.videoBitrateLevel = (prefs.videoBitrateLevel + 1) % 3
-                    3 -> prefs.hevc = !prefs.hevc
-                    4 -> prefs.stabilization = !prefs.stabilization
-                    5 -> prefs.antibanding50 = !prefs.antibanding50
-                    6 -> prefs.shortsLimit = (prefs.shortsLimit + 1) % 3
-                }
-                if (which == 1 && prefs.fps60 && prefs.videoRes == 0) showInfo("60 fps funciona en 1080p. En 2K tu celu graba a 30.", 4000)
-                afterVideoChange()
-                openVideoQuality()
-            }
-            .setNegativeButton("Listo", null)
-            .show()
-    }
-
-    private fun afterVideoChange() {
-        if (isVideoMode()) restartEngine()
-        refreshTopChips()
-    }
-
-    private fun openMicSettings() {
-        if (isRecording() || micTesting) return
-        val sourceLabel = AudioSetup.sourceLabel(prefs.audioSource)
-        val micLabel = AudioSetup.mics(this).firstOrNull { it.key == prefs.micKey }?.label ?: "Automático"
-        val items = arrayOf(
-            "Grabar audio en los videos: ${onOff(prefs.audioOn)}",
-            "Micrófono: $micLabel",
-            "Tipo de sonido: $sourceLabel",
-            "Canales: ${if (prefs.stereo) "Estéreo" else "Mono"}",
-            "Calidad de audio: ${prefs.audioBitrate / 1000} kbps",
-            "▶ Probar micrófono (5 segundos)"
-        )
-        AlertDialog.Builder(this)
-            .setTitle("Micrófono")
-            .setItems(items) { _, which ->
-                when (which) {
-                    0 -> prefs.audioOn = !prefs.audioOn
-                    1 -> { chooseMic(); return@setItems }
-                    2 -> { chooseSource(); return@setItems }
-                    3 -> prefs.stereo = !prefs.stereo
-                    4 -> prefs.audioBitrate = when (prefs.audioBitrate) { 128_000 -> 192_000; 192_000 -> 256_000; 256_000 -> 320_000; else -> 128_000 }
-                    5 -> { testMic(); return@setItems }
-                }
-                afterVideoChange()
-                openMicSettings()
-            }
-            .setNegativeButton("Listo", null)
-            .show()
-    }
-
-    private fun chooseMic() {
-        val mics = AudioSetup.mics(this)
-        val names = mics.map { it.label }.toTypedArray()
-        val cur = mics.indexOfFirst { it.key == prefs.micKey }.coerceAtLeast(0)
-        AlertDialog.Builder(this)
-            .setTitle("Elegí el micrófono")
-            .setSingleChoiceItems(names, cur) { d, i ->
-                prefs.micKey = mics[i].key
-                d.dismiss()
-                if (AudioSetup.isBluetooth(mics[i].device)) showInfo("Bluetooth graba en calidad de llamada. Para mejor sonido usá USB-C o cable.", 5000)
-                afterVideoChange()
-                openMicSettings()
-            }
-            .setNeutralButton("¿No aparece el tuyo?") { _, _ ->
-                AlertDialog.Builder(this)
-                    .setMessage("Conectá el micrófono (receptor USB-C, solapa por cable o Bluetooth) y volvé a abrir esta lista. Los micrófonos inalámbricos tipo receptor USB-C aparecen como \"USB-C\".")
-                    .setPositiveButton("Entendido", null).show()
-            }
-            .show()
-    }
-
-    private fun chooseSource() {
-        val unproc = AudioSetup.unprocessedSupported(this)
-        val opts = AudioSetup.SOURCES.filter { it.source != MediaRecorder.AudioSource.UNPROCESSED || unproc }
-        val names = opts.map { "${it.label} — ${it.help}" }.toTypedArray()
-        val cur = opts.indexOfFirst { it.source == prefs.audioSource }.coerceAtLeast(0)
-        AlertDialog.Builder(this)
-            .setTitle("Tipo de sonido")
-            .setSingleChoiceItems(names, cur) { d, i ->
-                prefs.audioSource = opts[i].source
-                d.dismiss()
-                afterVideoChange()
-                openMicSettings()
-            }
-            .show()
-    }
-
-    /** Graba 5 segundos con la configuración actual y te los hace escuchar. */
-    private fun testMic() {
-        if (!hasPerm(Manifest.permission.RECORD_AUDIO)) { permLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO)); return }
-        if (isRecording() || micTesting) return
-        val cfg = AudioSetup.build(this, prefs, force = true) ?: return
-        // El motor de video tiene la cámara pero no el micrófono, así que se puede probar igual.
-        val file = File(cacheDir, "prueba_mic.m4a")
-        val rec = try {
-            AudioSetup.prepareAudioRecorder(this, cfg) { it.setOutputFile(file.absolutePath) }
-        } catch (e: Exception) { showInfo("No se pudo usar ese micrófono: ${e.message}", 5000); return }
-        val comm = if (cfg.needsComm) AudioSetup.setComm(this, cfg.device) else false
-        try { rec.start() } catch (e: Exception) {
-            rec.release(); if (comm) AudioSetup.clearComm(this)
-            showInfo("El micrófono está ocupado", 4000); return
-        }
-        micTesting = true
-        audioMeter.visibility = View.VISIBLE
-        val start = SystemClock.elapsedRealtime()
-        val tick = object : Runnable {
-            override fun run() {
-                val t = SystemClock.elapsedRealtime() - start
-                if (t < 5000) {
-                    audioMeter.setAmplitude(try { rec.maxAmplitude } catch (e: Exception) { 0 })
-                    showInfo("🎙 Hablá como en tus videos… ${5 - t / 1000}", 1000)
-                    main.postDelayed(this, 80)
-                    return
-                }
-                try { rec.stop() } catch (_: Exception) { }
-                rec.release()
-                if (comm) AudioSetup.clearComm(this@MainActivity)
-                audioMeter.reset()
-                audioMeter.visibility = View.GONE
-                showInfo("▶ Escuchando la prueba… (${cfg.label})", 6000)
-                try {
-                    MediaPlayer().apply {
-                        setDataSource(file.absolutePath)
-                        setOnCompletionListener {
-                            it.release()
-                            micTesting = false
-                            showInfo("¿Se escuchó bien? Si no, probá otro tipo de sonido o micrófono", 5000)
-                        }
-                        prepare()
-                        start()
-                    }
-                } catch (e: Exception) {
-                    micTesting = false
-                    showInfo("No se pudo reproducir la prueba", 4000)
-                }
-            }
-        }
-        main.post(tick)
-    }
-
-    private fun editPrompter() {
-        if (isRecording()) return
-        val pad = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 18f, resources.displayMetrics).toInt()
-        val input = EditText(this).apply {
-            setText(prefs.prompterText)
-            hint = "Pegá acá el guion de tu video o Short…"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-            minLines = 6
-            maxLines = 14
-            gravity = Gravity.TOP or Gravity.START
-        }
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad / 2, pad, 0)
-            addView(input)
-        }
-        AlertDialog.Builder(this)
-            .setTitle("Teleprompter")
-            .setView(box)
-            .setPositiveButton("Guardar") { _, _ ->
-                prefs.prompterText = input.text.toString()
-                prefs.prompterOn = prefs.prompterText.isNotBlank()
-                prompter.text = prefs.prompterText
-                applyPrompterVisibility(); refreshTopChips()
-                if (prefs.prompterOn) showInfo("El guion arranca solo al grabar. Tocalo para pausar, arrastralo para moverlo.", 5000)
-            }
-            .setNeutralButton("Velocidad: ${listOf("lenta", "normal", "rápida", "muy rápida")[prefs.prompterSpeed.coerceIn(0, 3)]}") { _, _ ->
-                prefs.prompterText = input.text.toString()
-                prompter.text = prefs.prompterText
-                prefs.prompterSpeed = (prefs.prompterSpeed + 1) % 4
-                prompter.speedLevel = prefs.prompterSpeed
-                editPrompter()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
     private fun openSettings() {
         if (isRecording()) return
-        val items = arrayOf(
-            "🎬 Calidad de video…",
-            "🎙 Micrófono…",
-            "📜 Teleprompter: editar guion…",
-            "📜 Tamaño de letra del guion: ${prefs.prompterSize}",
-            "📷 Resolución de foto: ${if (prefs.maxRes) "máxima (108MP)" else "12MP"}",
-            "📷 Prioridad al sacar fotos: ${if (prefs.fastShutter) "velocidad" else "calidad"}",
-            "📷 Calidad JPG: ${prefs.jpegQuality}%",
-            "📷 Espejar selfies: ${onOff(prefs.mirrorFront)}",
-            "Cuadrícula: ${onOff(prefs.grid)}",
-            "Nivel de horizonte: ${onOff(prefs.level)}",
-            "Histograma (fotos): ${onOff(prefs.histogram)}",
-            "Sonidos: ${onOff(prefs.sound)}",
-            "Grabar/disparar con botones de volumen: ${onOff(prefs.volumeShutter)}",
-            "ℹ Ver qué permite la cámara de este celular"
-        )
-        AlertDialog.Builder(this)
-            .setTitle("Ajustes de Enfoque")
-            .setItems(items) { _, which ->
-                var rebind = false
-                when (which) {
-                    0 -> { openVideoQuality(); return@setItems }
-                    1 -> { openMicSettings(); return@setItems }
-                    2 -> { editPrompter(); return@setItems }
-                    3 -> {
-                        prefs.prompterSize = when (prefs.prompterSize) { 20 -> 24; 24 -> 30; 30 -> 36; else -> 20 }
-                        prompter.textSizeSp = prefs.prompterSize.toFloat()
-                    }
-                    4 -> { prefs.maxRes = !prefs.maxRes; rebind = true }
-                    5 -> { prefs.fastShutter = !prefs.fastShutter; rebind = true }
-                    6 -> { prefs.jpegQuality = when (prefs.jpegQuality) { 95 -> 100; 100 -> 85; else -> 95 }; rebind = true }
-                    7 -> prefs.mirrorFront = !prefs.mirrorFront
-                    8 -> { prefs.grid = !prefs.grid; refreshModeUi() }
-                    9 -> { prefs.level = !prefs.level; refreshModeUi() }
-                    10 -> { prefs.histogram = !prefs.histogram; rebind = true }
-                    11 -> prefs.sound = !prefs.sound
-                    12 -> prefs.volumeShutter = !prefs.volumeShutter
-                    13 -> { showCameraReport(); return@setItems }
-                }
-                if (rebind) bindCamera()
-                refreshTopChips()
-                openSettings()
-            }
-            .setNegativeButton("Cerrar", null)
-            .show()
+        hideQuickPanel()
+        settingsSnapshot = prefs.snapshot()
+        startActivity(Intent(this, SettingsActivity::class.java))
     }
 
-    private fun showCameraReport() {
-        val provider = cameraProvider ?: return
-        val report = try { CameraReport.build(this, provider, extensionsManager, lenses) } catch (e: Exception) { "Error: ${e.message}" }
-        val pad = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 18f, resources.displayMetrics).toInt()
-        val tv = TextView(this).apply {
-            setText(report)
-            setTextIsSelectable(true)
-            textSize = 12f
-            typeface = android.graphics.Typeface.MONOSPACE
-            setPadding(pad, pad / 2, pad, pad)
+    /** Al volver de Ajustes aplicamos lo que haya cambiado. */
+    private fun applySettingsChanges() {
+        prompter.text = prefs.prompterText
+        prompter.speedLevel = prefs.prompterSpeed
+        prompter.textSizeSp = prefs.prompterSize.toFloat()
+        guideOverlay.showZones = prefs.guides
+        refreshModeUi()
+        if (isVideoMode()) {
+            if (engine != null) restartEngine()
+        } else {
+            applyStage()
         }
-        val scroll = ScrollView(this).apply { addView(tv) }
-        AlertDialog.Builder(this)
-            .setTitle("Cámaras de este celular")
-            .setView(scroll)
-            .setPositiveButton("Copiar") { _, _ ->
-                val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-                cm.setPrimaryClip(ClipData.newPlainText("Cámaras", report))
-                Toast.makeText(this, "Copiado", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cerrar", null)
-            .show()
+        applyPrompterVisibility()
+        refreshTopChips()
     }
 
     // =====================================================================================
