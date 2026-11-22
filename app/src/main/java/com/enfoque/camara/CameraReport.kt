@@ -101,7 +101,7 @@ object CameraReport {
                 sb.append("  FPS: ${r.joinToString { "${it.lower}-${it.upper}" }}\n")
             }
             val caps = ch.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES) ?: IntArray(0)
-            sb.append("  Capacidades: ${caps.mapNotNull { capNames[it] }.joinToString()}\n")
+            sb.append("  Capacidades: ${caps.toList().mapNotNull { capNames[it] }.joinToString()}\n")
             if (ch.physicalCameraIds.isNotEmpty()) sb.append("  Cámaras físicas adentro: ${ch.physicalCameraIds.joinToString()}\n")
 
             val info = visible[id]
