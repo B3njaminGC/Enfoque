@@ -1352,6 +1352,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener, SurfaceHolder.Cal
         afterVideoChange()
     }
 
+    private fun afterVideoChange() {
+        if (isVideoMode()) restartEngine()
+        refreshTopChips()
+    }
+
     private fun togglePrompterQuick() {
         if (prefs.prompterText.isBlank()) { editPrompter(); return }
         prefs.prompterOn = !prefs.prompterOn
